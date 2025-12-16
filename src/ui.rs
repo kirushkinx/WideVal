@@ -29,7 +29,7 @@ pub struct WideValApp {
     original_resolution: Option<Resolution>,
     available_resolutions: Vec<Resolution>,
     selected_resolution_index: usize,
-    status_message: String,
+    status_message: Arc<Mutex<String>>,
     presets_status_message: String,
     settings_status_message: String,
     current_tab: Tab,
@@ -67,7 +67,7 @@ impl WideValApp {
             original_resolution: None,
             available_resolutions,
             selected_resolution_index,
-            status_message: String::from("Ready. Configure settings and launch Valorant"),
+            status_message: Arc::new(Mutex::new(String::from("Ready. Configure settings and launch Valorant"))),
             presets_status_message: String::new(),
             settings_status_message: String::new(),
             current_tab: Tab::Main,
@@ -132,15 +132,16 @@ impl WideValApp {
 
         self.log("Launching Valorant...".to_string());
         if let Err(e) = ValorantLauncher::launch() {
-            self.status_message = format!("Failed to launch Valorant: {}", e);
+            *self.status_message.lock().unwrap() = format!("Failed to launch Valorant: {}", e);
             self.log(format!("Launch failed: {}", e));
             return;
         }
 
-        self.status_message = "Valorant is launching...".to_string();
+        *self.status_message.lock().unwrap() = "Valorant is launching...".to_string();
         self.log("Waiting for Valorant process...".to_string());
 
         let state = Arc::clone(&self.state);
+        let status_message = Arc::clone(&self.status_message);
         let original_res = self.original_resolution;
         let config_manager = self.config_manager.clone();
         let apply_to_all = self.config.apply_to_all_accounts;
@@ -207,6 +208,7 @@ impl WideValApp {
             }
 
             *state.lock().unwrap() = AppState::Idle;
+            *status_message.lock().unwrap() = "Ready. Configure settings and launch Valorant".to_string();
         });
     }
 
@@ -307,7 +309,7 @@ impl eframe::App for WideValApp {
                     }
                 });
             });
-            ui.add_space(1.0); // Add 1px spacing after tabs
+            ui.add_space(1.0);
         });
 
         // Console as separate window
@@ -460,7 +462,8 @@ impl WideValApp {
 
         match current_state {
             AppState::Idle => {
-                ui.label(egui::RichText::new(&self.status_message).color(egui::Color32::GRAY));
+                let msg = self.status_message.lock().unwrap();
+                ui.label(egui::RichText::new(&*msg).color(egui::Color32::GRAY));
             }
             AppState::WaitingForValorant => {
                 ui.label(
