@@ -1,11 +1,11 @@
 [package]
-name = "wideval"
+name = "WideVal"
 version = "0.1.0"
 edition = "2021"
 authors = ["kirushkinx"]
 
 [[bin]]
-name = "wideval"
+name = "WideVal"
 path = "src/main.rs"
 
 [dependencies]
