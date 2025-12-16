@@ -1,0 +1,40 @@
+[package]
+name = "wideval"
+version = "0.1.0"
+edition = "2021"
+authors = ["kirushkinx"]
+
+[[bin]]
+name = "wideval"
+path = "src/main.rs"
+
+[dependencies]
+eframe = "0.29"
+egui = "0.29"
+tray-item = "0.10"
+image = "0.25"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+winreg = "0.52"
+auto-launch = "0.5"
+chrono = "0.4"
+winres = "0.1.12"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_System_Threading",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Registry",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[build-dependencies]
+winres = "0.1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

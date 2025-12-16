@@ -1,0 +1,8 @@
+/target
+Cargo.lock
+*.exe
+*.pdb
+*.swp
+*.swo
+*~
+.DS_Store
