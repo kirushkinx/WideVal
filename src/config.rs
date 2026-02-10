@@ -125,7 +125,8 @@ impl ConfigManager {
                 // Skip known non-account folders
                 if folder_name == "WindowsClient"
                     || folder_name == "CrashReportClient"
-                    || folder_name.starts_with("989e4975") {
+                    || folder_name.starts_with("989e4975")
+                {
                     continue;
                 }
 
