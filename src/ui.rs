@@ -67,7 +67,9 @@ impl WideValApp {
             original_resolution: None,
             available_resolutions,
             selected_resolution_index,
-            status_message: Arc::new(Mutex::new(String::from("Ready. Configure settings and launch Valorant"))),
+            status_message: Arc::new(Mutex::new(String::from(
+                "Ready. Configure settings and launch Valorant",
+            ))),
             presets_status_message: String::new(),
             settings_status_message: String::new(),
             current_tab: Tab::Main,
@@ -85,7 +87,11 @@ impl WideValApp {
 
     fn log(&self, message: String) {
         let mut output = self.console_output.lock().unwrap();
-        output.push(format!("[{}] {}", chrono::Local::now().format("%H:%M:%S"), message));
+        output.push(format!(
+            "[{}] {}",
+            chrono::Local::now().format("%H:%M:%S"),
+            message
+        ));
         if output.len() > 100 {
             output.remove(0);
         }
@@ -100,34 +106,31 @@ impl WideValApp {
             self.available_resolutions[self.selected_resolution_index]
         };
 
-        self.log(format!("Starting with resolution {}x{}", target_res.width, target_res.height));
+        self.log(format!(
+            "Starting with resolution {}x{}",
+            target_res.width, target_res.height
+        ));
         self.original_resolution = ResolutionManager::get_current();
-
-        // Always modify common WindowsClient config
-        let common_config = self.config_manager.valorant_config_base()
-            .join("WindowsClient")
-            .join("GameUserSettings.ini");
-
-        if common_config.exists() {
-            self.log("Modifying common WindowsClient config".to_string());
-            let _ = self.config_manager.modify_valorant_config(&common_config, target_res.width, target_res.height);
-        }
 
         if self.config.apply_to_all_accounts {
             let configs = self.config_manager.find_valorant_configs();
             self.log(format!("Modifying {} account configs", configs.len()));
             for config_path in &configs {
-                let _ = self
-                    .config_manager
-                    .modify_valorant_config(config_path, target_res.width, target_res.height);
+                let _ = self.config_manager.modify_valorant_config(
+                    config_path,
+                    target_res.width,
+                    target_res.height,
+                );
             }
         } else if self.selected_account_index < self.valorant_accounts.len() {
             let account_name = &self.valorant_accounts[self.selected_account_index].0;
             self.log(format!("Modifying config for account: {}", account_name));
             let config_path = &self.valorant_accounts[self.selected_account_index].1;
-            let _ = self
-                .config_manager
-                .modify_valorant_config(config_path, target_res.width, target_res.height);
+            let _ = self.config_manager.modify_valorant_config(
+                config_path,
+                target_res.width,
+                target_res.height,
+            );
         }
 
         self.log("Launching Valorant...".to_string());
@@ -145,11 +148,16 @@ impl WideValApp {
         let original_res = self.original_resolution;
         let config_manager = self.config_manager.clone();
         let apply_to_all = self.config.apply_to_all_accounts;
-        let account_path = if !apply_to_all && self.selected_account_index < self.valorant_accounts.len() {
-            Some(self.valorant_accounts[self.selected_account_index].1.clone())
-        } else {
-            None
-        };
+        let account_path =
+            if !apply_to_all && self.selected_account_index < self.valorant_accounts.len() {
+                Some(
+                    self.valorant_accounts[self.selected_account_index]
+                        .1
+                        .clone(),
+                )
+            } else {
+                None
+            };
         let console_output = Arc::clone(&self.console_output);
 
         thread::spawn(move || {
@@ -159,15 +167,26 @@ impl WideValApp {
 
             {
                 let mut output = console_output.lock().unwrap();
-                output.push(format!("[{}] Valorant detected! Changing resolution...", chrono::Local::now().format("%H:%M:%S")));
+                output.push(format!(
+                    "[{}] Valorant detected! Changing resolution...",
+                    chrono::Local::now().format("%H:%M:%S")
+                ));
             }
 
             if !ResolutionManager::set_resolution(target_res) {
                 let mut output = console_output.lock().unwrap();
-                output.push(format!("[{}] Failed to change resolution", chrono::Local::now().format("%H:%M:%S")));
+                output.push(format!(
+                    "[{}] Failed to change resolution",
+                    chrono::Local::now().format("%H:%M:%S")
+                ));
             } else {
                 let mut output = console_output.lock().unwrap();
-                output.push(format!("[{}] Resolution changed to {}x{}", chrono::Local::now().format("%H:%M:%S"), target_res.width, target_res.height));
+                output.push(format!(
+                    "[{}] Resolution changed to {}x{}",
+                    chrono::Local::now().format("%H:%M:%S"),
+                    target_res.width,
+                    target_res.height
+                ));
             }
 
             *state.lock().unwrap() = AppState::Running;
@@ -176,21 +195,21 @@ impl WideValApp {
 
             {
                 let mut output = console_output.lock().unwrap();
-                output.push(format!("[{}] Valorant closed. Restoring settings...", chrono::Local::now().format("%H:%M:%S")));
+                output.push(format!(
+                    "[{}] Valorant closed. Restoring settings...",
+                    chrono::Local::now().format("%H:%M:%S")
+                ));
             }
 
             if let Some(original) = original_res {
                 ResolutionManager::set_resolution(original);
                 let mut output = console_output.lock().unwrap();
-                output.push(format!("[{}] Resolution restored to {}x{}", chrono::Local::now().format("%H:%M:%S"), original.width, original.height));
-            }
-
-            // Restore common config
-            let common_config = config_manager.valorant_config_base()
-                .join("WindowsClient")
-                .join("GameUserSettings.ini");
-            if common_config.exists() {
-                let _ = config_manager.restore_valorant_config(&common_config);
+                output.push(format!(
+                    "[{}] Resolution restored to {}x{}",
+                    chrono::Local::now().format("%H:%M:%S"),
+                    original.width,
+                    original.height
+                ));
             }
 
             if apply_to_all {
@@ -204,11 +223,15 @@ impl WideValApp {
 
             {
                 let mut output = console_output.lock().unwrap();
-                output.push(format!("[{}] Settings restored. Ready for next launch.", chrono::Local::now().format("%H:%M:%S")));
+                output.push(format!(
+                    "[{}] Settings restored. Ready for next launch.",
+                    chrono::Local::now().format("%H:%M:%S")
+                ));
             }
 
             *state.lock().unwrap() = AppState::Idle;
-            *status_message.lock().unwrap() = "Ready. Configure settings and launch Valorant".to_string();
+            *status_message.lock().unwrap() =
+                "Ready. Configure settings and launch Valorant".to_string();
         });
     }
 
@@ -235,7 +258,8 @@ impl WideValApp {
 
         match self.config_manager.save_preset(&preset) {
             Ok(_) => {
-                self.presets_status_message = format!("Preset '{}' saved successfully!", preset.name);
+                self.presets_status_message =
+                    format!("Preset '{}' saved successfully!", preset.name);
                 self.presets = self.config_manager.list_presets();
                 self.new_preset_name.clear();
             }
@@ -324,7 +348,10 @@ impl eframe::App for WideValApp {
                         if ui.button("Clear").clicked() {
                             self.console_output.lock().unwrap().clear();
                         }
-                        ui.label(format!("{} log entries", self.console_output.lock().unwrap().len()));
+                        ui.label(format!(
+                            "{} log entries",
+                            self.console_output.lock().unwrap().len()
+                        ));
                     });
 
                     ui.separator();
@@ -416,9 +443,17 @@ impl WideValApp {
 
         ui.group(|ui| {
             ui.label("Valorant Accounts:");
-            ui.radio_value(&mut self.config.apply_to_all_accounts, true, "Apply to all accounts");
+            ui.radio_value(
+                &mut self.config.apply_to_all_accounts,
+                true,
+                "Apply to all accounts",
+            );
 
-            ui.radio_value(&mut self.config.apply_to_all_accounts, false, "Specific account");
+            ui.radio_value(
+                &mut self.config.apply_to_all_accounts,
+                false,
+                "Specific account",
+            );
             if !self.config.apply_to_all_accounts && !self.valorant_accounts.is_empty() {
                 egui::ComboBox::from_id_salt("account_combo")
                     .selected_text(&self.valorant_accounts[self.selected_account_index].0)
@@ -547,7 +582,8 @@ impl WideValApp {
                 if ui.button(button_text).clicked() {
                     if is_in_startup {
                         if let Err(e) = self.startup_manager.disable() {
-                            self.settings_status_message = format!("Failed to remove from startup: {}", e);
+                            self.settings_status_message =
+                                format!("Failed to remove from startup: {}", e);
                         } else {
                             self.settings_status_message = "Removed from startup".to_string();
                         }

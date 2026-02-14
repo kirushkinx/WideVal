@@ -42,16 +42,11 @@ pub struct ConfigManager {
 impl ConfigManager {
     pub fn new() -> Self {
         let app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
-        let config_path = PathBuf::from(&app_data)
-            .join("WideVal")
-            .join("config.json");
+        let config_path = PathBuf::from(&app_data).join("WideVal").join("config.json");
 
-        let presets_path = PathBuf::from(&app_data)
-            .join("WideVal")
-            .join("presets");
+        let presets_path = PathBuf::from(&app_data).join("WideVal").join("presets");
 
-        let valorant_config_base =
-            PathBuf::from(&app_data).join("VALORANT\\Saved\\Config");
+        let valorant_config_base = PathBuf::from(&app_data).join("VALORANT\\Saved\\Config");
 
         if let Some(parent) = config_path.parent() {
             let _ = fs::create_dir_all(parent);
@@ -82,22 +77,24 @@ impl ConfigManager {
     pub fn find_valorant_configs(&self) -> Vec<PathBuf> {
         let mut configs = Vec::new();
 
-        // Add common WindowsClient config (outside account folders)
-        let common_config = self.valorant_config_base
-            .join("WindowsClient")
-            .join("GameUserSettings.ini");
-
-        if common_config.exists() {
-            configs.push(common_config);
-        }
-
-        // Add account-specific configs
         if let Ok(entries) = fs::read_dir(&self.valorant_config_base) {
             for entry in entries.flatten() {
-                let config_file = entry
-                    .path()
-                    .join("WindowsClient")
-                    .join("GameUserSettings.ini");
+                let path = entry.path();
+
+                if !path.is_dir() {
+                    continue;
+                }
+
+                let folder_name = entry.file_name().to_string_lossy().to_string();
+
+                if folder_name == "WindowsClient"
+                    || folder_name == "CrashReportClient"
+                    || folder_name.starts_with("989e4975")
+                {
+                    continue;
+                }
+
+                let config_file = path.join("WindowsClient").join("GameUserSettings.ini");
 
                 if config_file.exists() {
                     configs.push(config_file);
@@ -130,9 +127,7 @@ impl ConfigManager {
                     continue;
                 }
 
-                let config_file = path
-                    .join("WindowsClient")
-                    .join("GameUserSettings.ini");
+                let config_file = path.join("WindowsClient").join("GameUserSettings.ini");
 
                 if config_file.exists() {
                     accounts.push((folder_name, config_file));
@@ -177,10 +172,6 @@ impl ConfigManager {
         fs::remove_file(preset_path)
     }
 
-    pub fn valorant_config_base(&self) -> &PathBuf {
-        &self.valorant_config_base
-    }
-
     pub fn modify_valorant_config(
         &self,
         config_path: &Path,
@@ -192,7 +183,7 @@ impl ConfigManager {
         let content = fs::read_to_string(config_path)?;
         let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
 
-        let mut fullscreen_added = false;
+        lines.retain(|line| !line.starts_with("FullscreenMode="));
 
         for i in 0..lines.len() {
             let line = &lines[i];
@@ -201,26 +192,29 @@ impl ConfigManager {
                 lines[i] = format!("ResolutionSizeX={}", width);
             } else if line.starts_with("ResolutionSizeY=") {
                 lines[i] = format!("ResolutionSizeY={}", height);
-            } else if line.starts_with("LastUserConfirmedResolutionSizeX=") {
-                lines[i] = format!("LastUserConfirmedResolutionSizeX={}", width);
-            } else if line.starts_with("LastUserConfirmedResolutionSizeY=") {
-                lines[i] = format!("LastUserConfirmedResolutionSizeY={}", height);
-            } else if line.starts_with("LastUserConfirmedDesiredScreenWidth=") {
-                lines[i] = format!("LastUserConfirmedDesiredScreenWidth={}", width);
-            } else if line.starts_with("LastUserConfirmedDesiredScreenHeight=") {
-                lines[i] = format!("LastUserConfirmedDesiredScreenHeight={}", height);
-            } else if line.starts_with("bShouldLetterbox=") {
-                lines[i] = "bShouldLetterbox=False".to_string();
-            } else if line.starts_with("FullscreenMode=") {
-                lines.remove(i);
-                break;
-            } else if line.is_empty() && !fullscreen_added {
-                lines.insert(i, "FullscreenMode=2".to_string());
-                fullscreen_added = true;
             }
         }
 
-        if !fullscreen_added {
+        let mut insert_position = None;
+        let mut in_shooter_section = false;
+
+        for i in 0..lines.len() {
+            if lines[i].starts_with("[/Script/ShooterGame.ShooterGameUserSettings]") {
+                in_shooter_section = true;
+            } else if in_shooter_section && lines[i].starts_with("[") {
+                if i > 0 && lines[i - 1].is_empty() {
+                    insert_position = Some(i - 1);
+                } else {
+                    insert_position = Some(i);
+                }
+                break;
+            }
+        }
+
+        if let Some(pos) = insert_position {
+            lines.insert(pos, "FullscreenMode=2".to_string());
+        } else {
+            lines.push("".to_string());
             lines.push("FullscreenMode=2".to_string());
         }
 
