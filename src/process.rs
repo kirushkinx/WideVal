@@ -1,12 +1,12 @@
 use std::thread;
 use std::time::Duration;
+use windows::core::PWSTR;
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
 use windows::Win32::System::ProcessStatus::EnumProcesses;
 use windows::Win32::System::Threading::{
     OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_INFORMATION,
     PROCESS_VM_READ,
 };
-use windows::core::PWSTR;
 
 pub struct ProcessManager;
 
@@ -37,7 +37,7 @@ impl ProcessManager {
                 (processes.len() * std::mem::size_of::<u32>()) as u32,
                 &mut bytes_returned,
             )
-                .is_err()
+            .is_err()
             {
                 return None;
             }
@@ -65,11 +65,11 @@ impl ProcessManager {
             let process_handle: HANDLE = match OpenProcess(
                 PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                 false,
-                pid,
+                pid
             ) {
-                Ok(handle) => handle,
-                Err(_) => return None,
-            };
+                    Ok(handle) => handle,
+                    Err(_) => return None,
+                };
 
             let mut buffer = vec![0u16; 260];
             let mut size = buffer.len() as u32;

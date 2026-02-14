@@ -1,7 +1,7 @@
 use std::mem;
 use windows::Win32::Graphics::Gdi::{
-    ChangeDisplaySettingsW, EnumDisplaySettingsW, DEVMODEW, CDS_FULLSCREEN, DISP_CHANGE_SUCCESSFUL,
-    ENUM_CURRENT_SETTINGS, ENUM_DISPLAY_SETTINGS_MODE, DM_PELSWIDTH, DM_PELSHEIGHT,
+    ChangeDisplaySettingsW, EnumDisplaySettingsW, CDS_FULLSCREEN, DEVMODEW, DISP_CHANGE_SUCCESSFUL,
+    DM_PELSHEIGHT, DM_PELSWIDTH, ENUM_CURRENT_SETTINGS, ENUM_DISPLAY_SETTINGS_MODE,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]

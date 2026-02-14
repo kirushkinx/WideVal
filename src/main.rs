@@ -5,6 +5,7 @@ mod launcher;
 mod process;
 mod resolution;
 mod startup;
+mod types;
 mod ui;
 
 use eframe::egui;

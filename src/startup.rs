@@ -8,11 +8,7 @@ pub struct StartupManager {
 impl StartupManager {
     pub fn new() -> Self {
         let exe_path = env::current_exe().unwrap_or_default();
-        let auto_launch = AutoLaunch::new(
-            "WideVal",
-            &exe_path.to_string_lossy(),
-            &[] as &[&str],
-        );
+        let auto_launch = AutoLaunch::new("WideVal", &exe_path.to_string_lossy(), &[] as &[&str]);
 
         Self { auto_launch }
     }
