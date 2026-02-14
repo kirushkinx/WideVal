@@ -249,6 +249,8 @@ impl ConfigManager {
             writeln!(file, "{}", line)?;
         }
 
+        Self::set_readonly(config_path, true)?;
+
         Ok(())
     }
 
