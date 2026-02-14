@@ -3,33 +3,20 @@ use crate::launcher::ValorantLauncher;
 use crate::process::ProcessManager;
 use crate::resolution::{Resolution, ResolutionManager};
 use crate::startup::StartupManager;
+use crate::types::{AppState, SharedBool, SharedConsoleOutput, SharedState, SharedString, Tab};
 use eframe::egui;
 use std::sync::{Arc, Mutex};
 use std::thread;
-
-#[derive(PartialEq, Copy, Clone)]
-enum AppState {
-    Idle,
-    WaitingForValorant,
-    Running,
-}
-
-#[derive(PartialEq)]
-enum Tab {
-    Main,
-    Presets,
-    Settings,
-}
 
 pub struct WideValApp {
     config: Config,
     config_manager: ConfigManager,
     startup_manager: StartupManager,
-    state: Arc<Mutex<AppState>>,
+    state: SharedState,
     original_resolution: Option<Resolution>,
     available_resolutions: Vec<Resolution>,
     selected_resolution_index: usize,
-    status_message: Arc<Mutex<String>>,
+    status_message: SharedString,
     presets_status_message: String,
     settings_status_message: String,
     current_tab: Tab,
@@ -40,8 +27,8 @@ pub struct WideValApp {
     selected_account_index: usize,
     presets: Vec<String>,
     new_preset_name: String,
-    show_console: bool,
-    console_output: Arc<Mutex<Vec<String>>>,
+    show_console: SharedBool,
+    console_output: SharedConsoleOutput,
 }
 
 impl WideValApp {
@@ -80,7 +67,7 @@ impl WideValApp {
             selected_account_index: 0,
             presets,
             new_preset_name: String::new(),
-            show_console: false,
+            show_console: Arc::new(Mutex::new(false)),
             console_output: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -329,47 +316,64 @@ impl eframe::App for WideValApp {
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button("📋 Console").clicked() {
-                        self.show_console = !self.show_console;
+                        let mut show = self.show_console.lock().unwrap();
+                        *show = !*show;
                     }
                 });
             });
             ui.add_space(1.0);
         });
 
-        // Console as separate window
-        if self.show_console {
-            egui::Window::new("Console Output")
-                .collapsible(true)
-                .resizable(true)
-                .default_width(600.0)
-                .default_height(400.0)
-                .show(ctx, |ui| {
-                    ui.horizontal(|ui| {
-                        if ui.button("Clear").clicked() {
-                            self.console_output.lock().unwrap().clear();
-                        }
-                        ui.label(format!(
-                            "{} log entries",
-                            self.console_output.lock().unwrap().len()
-                        ));
+        if *self.show_console.lock().unwrap() {
+            let console_output = Arc::clone(&self.console_output);
+            let show_console = Arc::clone(&self.show_console);
+
+            ctx.show_viewport_deferred(
+                egui::ViewportId::from_hash_of("console_window"),
+                egui::ViewportBuilder::default()
+                    .with_title("Console Output")
+                    .with_inner_size([600.0, 400.0])
+                    .with_active(true),
+                move |ctx, class| {
+                    assert!(class == egui::ViewportClass::Deferred, "Unknown error idk");
+
+                    egui::CentralPanel::default().show(ctx, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui.button("Clear").clicked() {
+                                console_output.lock().unwrap().clear();
+                            }
+                            ui.label(format!(
+                                "{} log entries",
+                                console_output.lock().unwrap().len()
+                            ));
+                        });
+
+                        ui.separator();
+
+                        egui::ScrollArea::vertical()
+                            .stick_to_bottom(true)
+                            .show(ui, |ui| {
+                                let output = console_output.lock().unwrap();
+                                if output.is_empty() {
+                                    ui.label("No console output yet");
+                                } else {
+                                    for line in output.iter() {
+                                        ui.label(line);
+                                    }
+                                }
+                            });
                     });
 
-                    ui.separator();
-
-                    egui::ScrollArea::vertical()
-                        .max_height(350.0)
-                        .stick_to_bottom(true)
-                        .show(ui, |ui| {
-                            let output = self.console_output.lock().unwrap();
-                            if output.is_empty() {
-                                ui.label("No console output yet");
-                            } else {
-                                for line in output.iter() {
-                                    ui.label(line);
-                                }
-                            }
-                        });
-                });
+                    if ctx.input(|i| i.viewport().close_requested()) {
+                        *show_console.lock().unwrap() = false;
+                    }
+                },
+            );
+        } else {
+            ctx.send_viewport_cmd_to(
+                egui::ViewportId::from_hash_of("console_window"),
+                egui::ViewportCommand::Close,
+            );
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -589,7 +593,8 @@ impl WideValApp {
                         }
                     } else {
                         if let Err(e) = self.startup_manager.enable() {
-                            self.settings_status_message = format!("Failed to add to startup: {}", e);
+                            self.settings_status_message =
+                                format!("Failed to add to startup: {}", e);
                         } else {
                             self.settings_status_message = "Added to startup".to_string();
                         }
