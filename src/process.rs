@@ -62,11 +62,8 @@ impl ProcessManager {
 
     fn get_process_name(pid: u32) -> Option<String> {
         unsafe {
-            let process_handle: HANDLE = match OpenProcess(
-                PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-                false,
-                pid
-            ) {
+            let process_handle: HANDLE =
+                match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) {
                     Ok(handle) => handle,
                     Err(_) => return None,
                 };

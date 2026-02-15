@@ -1,8 +1,8 @@
+use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
 use winreg::enums::*;
 use winreg::RegKey;
-use std::path::PathBuf;
-use std::fs;
 
 pub struct ValorantLauncher;
 
@@ -23,7 +23,8 @@ impl ValorantLauncher {
              2. Registry: HKLM\\SOFTWARE\\WOW6432Node\\Riot Games\\Riot Client\n\
              3. Start Menu shortcuts\n\
              4. Default paths\n\
-             Please make sure Valorant is installed.".to_string())
+             Please make sure Valorant is installed."
+            .to_string())
     }
 
     fn find_riot_client() -> Option<String> {
@@ -37,8 +38,8 @@ impl ValorantLauncher {
         for path in registry_paths {
             if let Ok(key) = hklm.open_subkey(path) {
                 if let Ok(install_folder) = key.get_value::<String, _>("InstallFolder") {
-                    let riot_client_path = PathBuf::from(&install_folder)
-                        .join("RiotClientServices.exe");
+                    let riot_client_path =
+                        PathBuf::from(&install_folder).join("RiotClientServices.exe");
 
                     if riot_client_path.exists() {
                         return Some(riot_client_path.to_string_lossy().to_string());

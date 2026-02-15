@@ -25,10 +25,7 @@ impl ResolutionManager {
             devmode.dmSize = mem::size_of::<DEVMODEW>() as u16;
 
             if EnumDisplaySettingsW(None, ENUM_CURRENT_SETTINGS, &mut devmode).as_bool() {
-                Some(Resolution::new(
-                    devmode.dmPelsWidth,
-                    devmode.dmPelsHeight,
-                ))
+                Some(Resolution::new(devmode.dmPelsWidth, devmode.dmPelsHeight))
             } else {
                 None
             }
@@ -56,7 +53,9 @@ impl ResolutionManager {
                 let mut devmode: DEVMODEW = mem::zeroed();
                 devmode.dmSize = mem::size_of::<DEVMODEW>() as u16;
 
-                if !EnumDisplaySettingsW(None, ENUM_DISPLAY_SETTINGS_MODE(index), &mut devmode).as_bool() {
+                if !EnumDisplaySettingsW(None, ENUM_DISPLAY_SETTINGS_MODE(index), &mut devmode)
+                    .as_bool()
+                {
                     break;
                 }
 

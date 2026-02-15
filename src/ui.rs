@@ -135,6 +135,7 @@ impl WideValApp {
         let original_res = self.original_resolution;
         let config_manager = self.config_manager.clone();
         let apply_to_all = self.config.apply_to_all_accounts;
+        let restore_after_close = self.config.restore_after_close;
         let account_path =
             if !apply_to_all && self.selected_account_index < self.valorant_accounts.len() {
                 Some(
@@ -199,13 +200,15 @@ impl WideValApp {
                 ));
             }
 
-            if apply_to_all {
-                let configs = config_manager.find_valorant_configs();
-                for config_path in &configs {
-                    let _ = config_manager.restore_valorant_config(&config_path);
+            if restore_after_close {
+                if apply_to_all {
+                    let configs = config_manager.find_valorant_configs();
+                    for config_path in &configs {
+                        let _ = config_manager.restore_valorant_config(&config_path);
+                    }
+                } else if let Some(path) = account_path {
+                    let _ = config_manager.restore_valorant_config(&path);
                 }
-            } else if let Some(path) = account_path {
-                let _ = config_manager.restore_valorant_config(&path);
             }
 
             {
@@ -241,6 +244,7 @@ impl WideValApp {
                 self.available_resolutions[self.selected_resolution_index].height
             },
             apply_to_all_accounts: self.config.apply_to_all_accounts,
+            restore_after_close: self.config.restore_after_close,
         };
 
         match self.config_manager.save_preset(&preset) {
@@ -276,6 +280,7 @@ impl WideValApp {
                 }
 
                 self.config.apply_to_all_accounts = preset.apply_to_all_accounts;
+                self.config.restore_after_close = preset.restore_after_close;
 
                 self.presets_status_message = format!("Preset '{}' loaded!", preset_name);
                 self.current_tab = Tab::Main;
@@ -469,6 +474,16 @@ impl WideValApp {
             } else if !self.config.apply_to_all_accounts {
                 ui.label("No Valorant accounts found");
             }
+        });
+
+        ui.add_space(10.0);
+
+        ui.group(|ui| {
+            ui.label("Options:");
+            ui.checkbox(
+                &mut self.config.restore_after_close,
+                "Restore properties after game close",
+            );
         });
 
         ui.add_space(20.0);

@@ -10,6 +10,12 @@ pub struct Config {
     pub auto_launch: bool,
     pub apply_to_all_accounts: bool,
     pub selected_account: Option<String>,
+    #[serde(default = "default_restore_after_close")]
+    pub restore_after_close: bool,
+}
+
+fn default_restore_after_close() -> bool {
+    true
 }
 
 impl Default for Config {
@@ -20,6 +26,7 @@ impl Default for Config {
             auto_launch: false,
             apply_to_all_accounts: true,
             selected_account: None,
+            restore_after_close: true,
         }
     }
 }
@@ -30,6 +37,8 @@ pub struct Preset {
     pub resolution_width: u32,
     pub resolution_height: u32,
     pub apply_to_all_accounts: bool,
+    #[serde(default = "default_restore_after_close")]
+    pub restore_after_close: bool,
 }
 
 #[derive(Clone)]

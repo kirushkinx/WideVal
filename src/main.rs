@@ -14,7 +14,7 @@ use ui::WideValApp;
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([450.0, 400.0])
+            .with_inner_size([500.0, 470.0])
             .with_resizable(true)
             .with_icon(load_icon()),
         ..Default::default()
