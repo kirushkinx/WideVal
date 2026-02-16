@@ -472,7 +472,7 @@ impl WideValApp {
                         }
                     });
             } else if !self.config.apply_to_all_accounts {
-                ui.label("No Valorant accounts found");
+                ui.label("No Valorant accounts found :/");
             }
         });
 
@@ -493,7 +493,7 @@ impl WideValApp {
         if ui
             .add_enabled(
                 button_enabled,
-                egui::Button::new("Launch Valorant with Stretch"),
+                egui::Button::new("Launch Valorant"),
             )
             .clicked()
         {
@@ -527,7 +527,7 @@ impl WideValApp {
             }
             AppState::Running => {
                 ui.label(
-                    egui::RichText::new("✅ Valorant is running with stretched resolution")
+                    egui::RichText::new("✅ Valorant is running successfully")
                         .color(egui::Color32::GREEN),
                 );
             }
